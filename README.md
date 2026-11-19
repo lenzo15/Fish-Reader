@@ -1,10 +1,12 @@
 # 鱼读 · FishReader
 
-**简体中文** · [English](README.en.md)
+**简体中文** · [English](README.en.md) ｜ **[下载最新版（Windows x64）](https://github.com/lenzo15/Fish-Reader/releases/latest)** · [全部发行版本](https://github.com/lenzo15/Fish-Reader/releases)
 
 鱼读是一款极简的 Windows 离线阅读器，提供完整的上班摸鱼阅读体验，完善包体仅1M多。
 
 把书拖进窗口即可开始阅读； `Ctrl+'`，把窗口缩成只显示正文的无边框浮窗。
+
+无需编译：在发行页的 **Assets** 中下载 `FishReader.exe`，双击即可运行。需要源码时，选择同一版本的源码 ZIP。
 
 ## 从源码运行
 
