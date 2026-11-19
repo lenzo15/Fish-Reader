@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Windows build
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-binutils mingw-w64-ucrt-x86_64-zlib
+      - name: Build and test file import and pagination
+        shell: msys2 {0}
+        run: |
+          export UCRT64="$(cygpath -w /ucrt64)"
+          MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c "build.cmd test-core"
