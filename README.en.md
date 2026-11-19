@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · **English** | **[Download the latest release (Windows x64)](https://github.com/lenzo15/Fish-Reader/releases/latest)** · [All releases](https://github.com/lenzo15/Fish-Reader/releases)
 
-FishReader is a minimalist offline reader for Windows, built for sneaking in a few pages at work. The whole app is just over 1 MB.
+FishReader is a minimalist offline reader for Windows, built for sneaking in a few pages at work. The Windows executable is just over 1 MB.
 
 Drop a book onto the window to start reading. Press `Ctrl+'` to switch to a compact, borderless window that shows only the text.
 
