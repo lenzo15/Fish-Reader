@@ -12,7 +12,12 @@ jobs:
         with:
           msystem: UCRT64
           install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-binutils mingw-w64-ucrt-x86_64-zlib
-      - name: Build and test file import and pagination
+      - name: Build Windows executable
+        shell: msys2 {0}
+        run: |
+          export UCRT64="$(cygpath -w /ucrt64)"
+          MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c "build.cmd"
+      - name: Test reader core (no UI)
         shell: msys2 {0}
         run: |
           export UCRT64="$(cygpath -w /ucrt64)"

@@ -38,19 +38,21 @@ You need Windows 10 version 1703 or later (including Windows 11) and the **UCRT6
 
 **Settings → Keys** lists all 11 bindings below.
 
-| Action | Default shortcut |
-| --- | --- |
-| Hide to tray / restore (global boss key) | `Ctrl+Q` |
-| Toggle focus mode | `Ctrl+'` |
-| Open a book / library / chapter list | `Ctrl+O` / `Ctrl+L` / `Ctrl+I` |
-| Toggle a bookmark at the current position | `Ctrl+B` |
-| Open settings | `Ctrl+,` |
-| Previous / next page | `K` / `J`, arrow keys, `Page Up` / `Page Down`, mouse wheel |
-| Jump to the start / end of the book | `Home` / `End` |
+| Action                                    | Default shortcut                                            |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| Hide to tray / restore (global boss key)  | `Ctrl+Q`                                                    |
+| Toggle focus mode                         | `Ctrl+'`                                                    |
+| Open a book / library / chapter list      | `Ctrl+O` / `Ctrl+L` / `Ctrl+I`                              |
+| Toggle a bookmark at the current position | `Ctrl+B`                                                    |
+| Open settings                             | `Ctrl+,`                                                    |
+| Previous / next page                      | `K` / `J`, arrow keys, `Page Up` / `Page Down`, mouse wheel |
+| Jump to the start / end of the book       | `Home` / `End`                                              |
 
 ## Tests
 
-From the project root in cmd, run `build.cmd test-core` to check book import and pagination. Run `build.cmd test` to also check shortcuts, restoring the window from the tray, the interface and saved reading positions. The full suite requires an interactive Windows desktop with the Explorer notification area. Tests use a temporary profile and do not read your library.
+From the project root in cmd, run `build.cmd test-core` to compile and run `tests/core_tests.cpp`. It covers TXT / Markdown / EPUB / DOCX / FB2 import, text encodings, EPUB compatibility and contents hierarchies, invalid input, chapter indexing and DirectWrite pagination. `build.cmd test` is a compatibility alias for the same core tests.
+
+Core tests link only the reader modules and use temporary files and synthetic samples. They do not create windows, operate the tray, read your library or overwrite a running `FishReader.exe`, and can run in GitHub Actions. Use `build.cmd` to build the application separately. Windows, shortcuts, tray restoration, repeated launches and saved reading positions still require manual checks on an interactive Windows desktop.
 
 ## License and credits
 

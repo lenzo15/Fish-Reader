@@ -35,9 +35,9 @@ src/ui/render.cpp
 src/ui/shortcut_editor.cpp
 src/ui/window.cpp
 src/ui/window.hpp
+tests/core_tests.cpp
 tests/fixtures/sample.docx
 tests/fixtures/sample.epub
 tests/fixtures/sample.fb2
-tests/tests.cpp
 tools/make_fish_icon.py
 tools/package_source.py

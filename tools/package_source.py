@@ -7,7 +7,7 @@ import os
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-PREFIX = "FishReader-1.0.0"
+PREFIX = "FishReader-1.0.1"
 MANIFEST = "SOURCE_MANIFEST.txt"
 
 

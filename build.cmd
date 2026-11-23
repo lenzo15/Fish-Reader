@@ -17,16 +17,18 @@ set "flags=-std=c++17 -O2 -municode -finput-charset=UTF-8 -Wall -Wextra -Isrc"
 set "libs=-ld2d1 -ldwrite -lxmllite -lshlwapi -lz -ldwmapi -lcomdlg32 -lole32 -luuid -lshell32 -lgdi32"
 set "objs=bin\obj\book.o bin\obj\window.o bin\obj\render.o bin\obj\input.o bin\obj\shortcut_editor.o"
 
+rem Core tests do not build, link or launch the UI, so a running reader is not affected.
+if /i "%~1"=="test-core" goto testCore
+if /i "%~1"=="test" goto testCore
+
 windres -I . resources\windows\app.rc -O coff -o bin\obj\app.res || exit /b 1
 for %%f in (src\reader\book.cpp src\ui\window.cpp src\ui\render.cpp src\ui\input.cpp src\ui\shortcut_editor.cpp) do (
   g++ %flags% -c "%%f" -o "bin\obj\%%~nf.o" || exit /b 1
 )
 g++ %flags% -s -static -mwindows src\main.cpp %objs% bin\obj\app.res -o bin\FishReader.exe %libs% || exit /b 1
-if "%~1"=="" exit /b 0
-g++ %flags% -static tests\tests.cpp %objs% bin\obj\app.res -o bin\tests.exe %libs% || exit /b 1
-if /i "%~1"=="test-core" (
-  bin\tests.exe --core || exit /b 1
-) else (
-  bin\tests.exe || exit /b 1
-)
+exit /b 0
+
+:testCore
+g++ %flags% -static tests\core_tests.cpp src\reader\book.cpp -o bin\core-tests.exe -ldwrite -lxmllite -lshlwapi -lz -lole32 -luuid || exit /b 1
+bin\core-tests.exe || exit /b 1
 exit /b 0

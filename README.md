@@ -50,7 +50,9 @@
 
 ## 测试
 
-在源码根目录的 cmd 中运行 `build.cmd test-core` 验证导入与分页；运行 `build.cmd test` 还会检查快捷键、托盘恢复、界面和进度保存。完整测试需要带有 Explorer 通知区域的交互式 Windows 桌面。测试使用临时配置，不读取你的书架。
+在源码根目录的 cmd 中运行 `build.cmd test-core`，编译并执行 `tests/core_tests.cpp`，覆盖 TXT / Markdown / EPUB / DOCX / FB2 导入、文本编码、EPUB 兼容性与目录层级、异常输入、章节索引及 DirectWrite 分页。`build.cmd test` 是同一核心测试的兼容入口。
+
+核心测试只链接阅读模块，使用临时文件和合成样本，不创建窗口、不操作托盘、不读取个人书架，也不会覆盖正在运行的 `FishReader.exe`，可在 GitHub Actions 中运行。普通应用构建仍使用 `build.cmd`。窗口、快捷键、托盘恢复、重复启动和进度保存仍需在交互式 Windows 桌面中手工验证。
 
 ## 许可与致谢
 
