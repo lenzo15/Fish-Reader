@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/window.hpp"
+#include "platform/single_instance.hpp"
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show) {
     using namespace leaf;
+    Str file;
+    int n = 0;
+    auto args = CommandLineToArgvW(GetCommandLineW(), &n);
+    if (args && n > 1)
+        file = fs::absolute(args[1]).lexically_normal().wstring();
+    if (args)
+        LocalFree(args);
+    SingleInstance single;
+    auto result = single.enter(file);
+    if (result != SingleInstance::Result::Primary)
+        return result == SingleInstance::Result::Forwarded ? 0 : 1;
     ComScope com;
     Window a;
     WNDCLASSW cls{};
     cls.lpfnWndProc = proc;
     cls.hInstance = instance;
-    cls.lpszClassName = L"FishReaderNative";
+    cls.lpszClassName = SingleInstance::windowClass;
     cls.style = CS_DBLCLKS;
     cls.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     cls.hIcon = LoadIconW(instance, MAKEINTRESOURCE(2));
@@ -26,12 +38,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show) {
         return 1;
     ShowWindow(h, show);
     UpdateWindow(h);
-    int n = 0;
-    auto args = CommandLineToArgvW(GetCommandLineW(), &n);
-    if (args && n > 1)
-        a.beginFile(args[1]);
-    if (args)
-        LocalFree(args);
+    if (!file.empty())
+        a.beginFile(file);
     MSG msg{};
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
         TranslateMessage(&msg);

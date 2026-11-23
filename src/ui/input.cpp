@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ui/window.hpp"
+#include "platform/single_instance.hpp"
 #include <windowsx.h>
 
 namespace leaf {
@@ -193,9 +194,7 @@ void Window::action(int id) {
         break;
     case Up:
     case Down:
-        first = std::max(0, first + (id == Down ? listRows : -listRows));
-        selected = -1;
-        invalid();
+        scrollList(id == Down ? listRows : -listRows);
         break;
     case Hide:
         if (!hiddenToTray) {
@@ -236,6 +235,32 @@ void Window::action(int id) {
         }
         break;
     }
+}
+
+void Window::scrollList(int delta) {
+    if (screen != Shelf && screen != Chapters && screen != Bookmarks)
+        return;
+    int next = std::clamp(first + delta, 0, std::max(0, count() - listRows));
+    if (next == first)
+        return;
+    first = next;
+    hits.clear(); // Rows must not retain stale click/focus targets after scrolling.
+    selected = -1;
+    hover = Nil;
+    keyboard = false;
+    invalid();
+}
+
+void Window::dragChapterScroll(LPARAM xy) {
+    if (!scrollingChapters || screen != Chapters || !book)
+        return;
+    float travel = (chapterTrack.bottom - chapterTrack.top) - (chapterThumb.bottom - chapterThumb.top);
+    if (travel <= 0)
+        return;
+    float y = GET_Y_LPARAM(xy) / scale;
+    float fraction = std::clamp((y - chapterGrab - chapterTrack.top) / travel, 0.f, 1.f);
+    int next = int(std::lround(fraction * std::max(0, count() - listRows)));
+    scrollList(next - first);
 }
 
 bool Window::key(WPARAM k, UINT mods, bool repeat) {
@@ -352,6 +377,12 @@ void Window::pointerEntered(bool nonClient) {
 
 int Window::hit(LPARAM p) {
     float x = GET_X_LPARAM(p) / scale, y = GET_Y_LPARAM(p) / scale;
+    // Like a native scrollbar, this is mouse-only; keyboard users retain the
+    // existing arrow/page controls without an extra Tab stop for the track.
+    if (!choosingColor && screen == Chapters && chapterTrack.bottom > chapterTrack.top &&
+        x >= chapterTrack.left && x <= chapterTrack.right &&
+        y >= chapterTrack.top && y <= chapterTrack.bottom)
+        return ChapterScroll;
     for (auto t : hits) {
         auto b = t.box;
         if (x >= b.left && x <= b.right && y >= b.top && y <= b.bottom)
@@ -426,6 +457,15 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         return 0;
     }
     switch (m) {
+    case WM_COPYDATA: {
+        Str file;
+        if (!SingleInstance::request(reinterpret_cast<const COPYDATASTRUCT *>(lp), file))
+            return 0;
+        activate();
+        if (!file.empty())
+            beginFile(file);
+        return 1;
+    }
     case ReaderTray::message:
         if (hiddenToTray && tray.activation(wp, lp))
             action(Hide);
@@ -445,6 +485,9 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         return 0;
     }
     case WM_DPICHANGED: {
+        if (scrollingChapters)
+            stopDrag();
+        chapterTrack = chapterThumb = {};
         scale = HIWORD(wp) / 96.f;
         auto r = (RECT *)lp;
         if (rt)
@@ -455,6 +498,9 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         return 0;
     }
     case WM_SIZE:
+        if (scrollingChapters)
+            stopDrag();
+        chapterTrack = chapterThumb = {};
         if (rt && wp != SIZE_MINIMIZED) {
             rt->Resize(SizeU(LOWORD(lp), HIWORD(lp)));
         }
@@ -513,6 +559,16 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
             }
             return 0;
         }
+        if (hit(lp) == ChapterScroll) {
+            float y = GET_Y_LPARAM(lp) / scale;
+            chapterGrab = y >= chapterThumb.top && y <= chapterThumb.bottom
+                              ? y - chapterThumb.top : (chapterThumb.bottom - chapterThumb.top) / 2;
+            SetCapture(hwnd);
+            scrollingChapters = GetCapture() == hwnd;
+            dragChapterScroll(lp);
+            invalid();
+            return 0;
+        }
         if (focus && bubbles && hit(lp) == BubbleMove) {
             dragStart = screenPoint(lp);
             GetWindowRect(hwnd, &dragRect);
@@ -522,6 +578,13 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         }
         return 0;
     case WM_LBUTTONUP: {
+        if (scrollingChapters) {
+            dragChapterScroll(lp);
+            stopDrag();
+            hover = Nil;
+            invalid();
+            return 0;
+        }
         if (resizeEdge != HTNOWHERE) {
             resizeDrag(screenPoint(lp));
             stopDrag();
@@ -579,6 +642,11 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
             pointerEntered(true);
         break;
     case WM_MOUSEMOVE: {
+        if (scrollingChapters) {
+            SetCursor(LoadCursorW(nullptr, IDC_ARROW));
+            dragChapterScroll(lp);
+            return 0;
+        }
         if (picking != Nil) {
             pickAt(picking, lp);
             return 0;
@@ -594,7 +662,8 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         }
         pointerEntered(false);
         int id = hit(lp);
-        SetCursor(LoadCursorW(nullptr, id == BubbleMove ? IDC_SIZEALL : (id ? IDC_HAND : IDC_ARROW)));
+        SetCursor(LoadCursorW(nullptr, id == BubbleMove ? IDC_SIZEALL
+                                        : id && id != ChapterScroll ? IDC_HAND : IDC_ARROW));
         if (id != hover) {
             hover = id;
             invalid();
@@ -622,12 +691,16 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
             if (GetCapture() == hwnd)
                 ReleaseCapture();
         }
-        if (dragging || resizeEdge != HTNOWHERE) {
+        if (scrollingChapters || dragging || resizeEdge != HTNOWHERE) {
             stopDrag();
             clearBubbles();
         }
         break;
     case WM_KILLFOCUS:
+        if (scrollingChapters) {
+            stopDrag();
+            invalid();
+        }
         capturedVK = 0;
         if (recording != Slot::Count) {
             endRecording();
@@ -647,6 +720,8 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
         break;
     case WM_SHOWWINDOW:
         if (!wp) {
+            if (scrollingChapters)
+                stopDrag();
             endRecording();
             capturedVK = 0;
         }
@@ -671,10 +746,8 @@ LRESULT Window::msg(UINT m, WPARAM wp, LPARAM lp) {
                 scrollKeys(dir * std::min(3, keyRows));
             else if (screen == Reading)
                 action(dir == 1 ? Next : Back);
-            else {
-                first = std::max(0, first + dir * 3);
-                invalid();
-            }
+            else
+                scrollList(dir * 3);
         }
         return 0;
     case WM_DROPFILES: {

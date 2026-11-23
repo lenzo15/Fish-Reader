@@ -5,6 +5,7 @@ namespace leaf {
 struct Heading {
     Pos pos;
     Str name;
+    int depth = 0;
 };
 struct Book {
     fs::path file;

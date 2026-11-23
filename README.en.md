@@ -4,8 +4,6 @@
 
 FishReader is a minimalist offline reader for Windows, built for sneaking in a few pages at work. The Windows executable is just over 1 MB.
 
-Drop a book onto the window to start reading. Press `Ctrl+'` to switch to a compact, borderless window that shows only the text.
-
 No build required: download `FishReader.exe` from **Assets** on the release page and double-click it to run. For the matching source, choose the source ZIP from the same release.
 
 ## Build from source
@@ -31,13 +29,14 @@ You need Windows 10 version 1703 or later (including Windows 11) and the **UCRT6
 ## Reading
 
 - **Open a book:** Drop a TXT, Markdown, EPUB, DOCX or FB2 file onto the window, or press `Ctrl+O`. Markdown is displayed as plain text.
+- **Single instance:** Launching the app again shows the existing window, restoring it if minimized or hidden in the tray.
 - **Focus mode:** By default, `Ctrl+'` (apostrophe) toggles focus mode on or off.
-- **Appearance:** Open **Aa** to adjust the font size, line spacing and background color. To switch to English, choose **Aa → 窗口 → English**.
+- **Appearance:** Click the **gear (Settings)** icon at the top right to adjust the font size, line spacing and background color. To switch to English, choose **Settings → 窗口 → English**.
 - **Saves and backups:** FishReader does not copy or modify your books. Your library, reading positions, bookmarks and settings are stored in `%LOCALAPPDATA%\MoyuLeaf\state.bin`.
 
 ## Shortcuts
 
-Open **Aa → Keys** to see all 11 bindings. Click a row and press a new key or key combination to save it without opening a dialog. While editing, press `Esc` to cancel, `Delete` to clear the binding, or click **Use default** to reset that row. If FishReader detects a conflict, it keeps the previous binding.
+**Settings → Keys** lists all 11 bindings below.
 
 | Action | Default shortcut |
 | --- | --- |
@@ -46,10 +45,8 @@ Open **Aa → Keys** to see all 11 bindings. Click a row and press a new key or 
 | Open a book / library / chapter list | `Ctrl+O` / `Ctrl+L` / `Ctrl+I` |
 | Toggle a bookmark at the current position | `Ctrl+B` |
 | Open settings | `Ctrl+,` |
-| Previous / next page | `K` / `J` |
+| Previous / next page | `K` / `J`, arrow keys, `Page Up` / `Page Down`, mouse wheel |
 | Jump to the start / end of the book | `Home` / `End` |
-
-The boss key also works when another app has focus. You can also turn pages with the arrow keys, Page Up, Page Down or the mouse wheel.
 
 ## Tests
 

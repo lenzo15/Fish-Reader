@@ -22,6 +22,7 @@ src/common.hpp
 src/locale/i18n.hpp
 src/main.cpp
 src/platform/shortcuts.hpp
+src/platform/single_instance.hpp
 src/platform/state.hpp
 src/platform/tray.hpp
 src/reader/book.cpp

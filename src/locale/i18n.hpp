@@ -26,7 +26,6 @@ enum class Msg {
     MarkHint,
     Resume,
     BackShelf,
-    Offline,
     Type,
     Color,
     Window,
@@ -134,7 +133,6 @@ inline constexpr Translation strings[] = {
      L"Use the bookmark shortcut or Toggle mark."},        // MarkHint
     {L"返回阅读", L"Resume"},                              // Resume
     {L"返回书架", L"Library"},                             // BackShelf
-    {L"本地阅读  ·  无需联网", L"Offline reading"},        // Offline
     {L"排版", L"Type"},                                    // Type
     {L"配色", L"Color"},                                   // Color
     {L"窗口", L"Window"},                                  // Window
@@ -164,8 +162,8 @@ inline constexpr Translation strings[] = {
     {L"鱼读 · 点击恢复阅读", L"FishReader · Click to resume"},   // TrayTip
     {L"进度未能保存，请检查目录权限。",
      L"Could not save progress. Check folder permissions."}, // SaveFailed
-    {L"老板键无法注册，可到「Aa → 按键」更改。",
-     L"Hide shortcut unavailable. Change it in Aa → Keys."},         // HotConflict
+    {L"老板键无法注册，可到「设置 → 按键」更改。",
+     L"Hide shortcut unavailable. Change it in Settings → Keys."},         // HotConflict
     {L"请稍候，正在打开书籍。", L"Please wait. A book is opening."}, // Wait
     {L"无法读取此书；请检查格式和可用内存。",
      L"Cannot read this book. Check its format and available memory."},                // ImportFailed

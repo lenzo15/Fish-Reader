@@ -15,6 +15,20 @@ void Window::updateTitle() {
     SetWindowTextW(hwnd, title.c_str());
 }
 
+void Window::activate() {
+    if (hiddenToTray)
+        action(Hide); // Also restores any owned dialogs and removes the tray icon.
+    else {
+        bool noActivate = (GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) != 0;
+        ShowWindow(hwnd, noActivate ? SW_SHOWNOACTIVATE : IsIconic(hwnd) ? SW_RESTORE : SW_SHOW);
+    }
+    HWND popup = GetLastActivePopup(hwnd);
+    if (!IsWindowVisible(popup))
+        popup = hwnd;
+    if (!(GetWindowLongPtrW(hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE))
+        SetForegroundWindow(popup);
+}
+
 void Window::invalid() {
     InvalidateRect(hwnd, nullptr, FALSE);
 }
@@ -44,6 +58,7 @@ void Window::save() {
 }
 
 void Window::stopDrag() {
+    scrollingChapters = false;
     dragging = false;
     resizeEdge = HTNOWHERE;
     if (GetCapture() == hwnd)
@@ -118,6 +133,9 @@ void Window::setFocusMode(bool on) {
 }
 
 void Window::pageScreen(Screen s) {
+    if (scrollingChapters)
+        stopDrag();
+    chapterTrack = chapterThumb = {};
     endRecording();
     if (choosingColor)
         endColor(false);
@@ -126,6 +144,7 @@ void Window::pageScreen(Screen s) {
     screen = s;
     hits.clear();
     first = 0;
+    wheel = 0;
     hover = Nil;
     selected = -1;
     keyboard = false;

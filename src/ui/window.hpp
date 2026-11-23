@@ -53,6 +53,7 @@ enum Action {
     Hide,
     Up,
     Down,
+    ChapterScroll,
     PickField,
     PickHue,
     PickCancel,
@@ -71,7 +72,7 @@ struct Window {
     HWND hwnd = nullptr;
     float scale = 1, w = 0, h = 0, margin = 28, bodyTop = 0, bodyBottom = 0;
     ComPtr<ID2D1Factory> d2;
-    ComPtr<ID2D1PathGeometry> fishMark;
+    ComPtr<ID2D1PathGeometry> fishMark, gearMark;
     ComPtr<IDWriteFactory> dw;
     ComPtr<ID2D1HwndRenderTarget> rt;
     ComPtr<ID2D1SolidColorBrush> brush;
@@ -110,11 +111,15 @@ struct Window {
     unsigned rows = 1;
     Screen screen = Shelf;
     int first = 0, listRows = 1;
+    Box chapterTrack{}, chapterThumb{};
+    bool scrollingChapters = false;
+    float chapterGrab = 0;
     std::future<Book> job;
     std::optional<Fail> notice;
     Str loadName;
     const wchar_t *tr(Msg msg) const;
     void updateTitle();
+    void activate();
     void invalid();
     void note(Msg id);
     void note(Fail s);
@@ -139,6 +144,7 @@ struct Window {
     void target(int id, Box b);
     void button(int id, Box b, View title, bool primary = false, bool active = false);
     void fishIcon(float x, float y, float s, DWORD col);
+    void settingsButton(Box b);
     bool compact() const;
     float textLeft() const;
     DWORD canvasColor() const;
@@ -154,6 +160,8 @@ struct Window {
     void read();
     int count() const;
     void list();
+    void scrollList(int delta);
+    void dragChapterScroll(LPARAM xy);
     void appearanceControls(float l, float r, float y);
     void focusControls();
     void settings();

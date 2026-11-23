@@ -88,6 +88,38 @@ void Window::fishIcon(float x, float y, float s, DWORD col) {
     rt->SetTransform(old);
 }
 
+void Window::settingsButton(Box b) {
+    bool active = screen == Settings;
+    button(Style, b, L"", false, active);
+    if (!gearMark) {
+        check(d2->CreatePathGeometry(gearMark.GetAddressOf()));
+        ComPtr<ID2D1GeometrySink> sink;
+        check(gearMark->Open(sink.GetAddressOf()));
+        // Eight teeth, in device-independent units; no icon-font dependency.
+        constexpr float pi = 3.14159265f;
+        constexpr float angles[] = {-17.f, -13.f, 13.f, 17.f};
+        for (int i = 0; i < 32; ++i) {
+            int corner = i % 4;
+            float angle = (i / 4 * 45.f + angles[corner]) * pi / 180.f;
+            float radius = corner == 0 || corner == 3 ? 7.f : 9.f;
+            auto p = Point2F(std::cos(angle) * radius, std::sin(angle) * radius);
+            if (i == 0)
+                sink->BeginFigure(p, D2D1_FIGURE_BEGIN_HOLLOW);
+            else
+                sink->AddLine(p);
+        }
+        sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+        check(sink->Close());
+    }
+    D2D1_MATRIX_3X2_F old;
+    rt->GetTransform(&old);
+    rt->SetTransform(Matrix3x2F::Translation((b.left + b.right) / 2, (b.top + b.bottom) / 2) * old);
+    color(active ? c.accent : c.ink);
+    rt->DrawGeometry(gearMark.Get(), brush.Get(), 1.5f);
+    rt->DrawEllipse(Ellipse(Point2F(0, 0), 3.f, 3.f), brush.Get(), 1.5f);
+    rt->SetTransform(old);
+}
+
 bool Window::compact() const {
     return w < 398 || h < 448;
 }
@@ -222,7 +254,7 @@ void Window::header() {
     if (compact()) {
         label(tr(Msg::Brand), {12, 5, w - 156, 38}, 18, canvasInk(c.ink), true);
         button(Home, {w - 143, 7, w - 77, 37}, tr(Msg::Shelf), false, screen == Shelf);
-        button(Style, {w - 71, 7, w - 12, 37}, L"Aa", false, screen == Settings);
+        settingsButton({w - 71, 7, w - 12, 37});
         return;
     }
     panel({margin, 18, margin + 36, 54}, 11, 0x34495d);
@@ -230,7 +262,7 @@ void Window::header() {
     label(tr(Msg::Brand), {margin + 48, 12, w - 185, 44}, 22, canvasInk(c.ink), true);
     label(L"FishReader", {margin + 49, 41, w - 185, 58}, 10, canvasInk(c.muted), true);
     button(Home, {w - margin - 138, 21, w - margin - 74, 53}, tr(Msg::Shelf), false, screen == Shelf);
-    button(Style, {w - margin - 66, 21, w - margin, 53}, L"Aa", false, screen == Settings);
+    settingsButton({w - margin - 66, 21, w - margin, 53});
 }
 
 void Window::layout() {
@@ -304,6 +336,10 @@ void Window::list() {
     else if (screen == Bookmarks)
         button(AddMark, {right - 110, top - 43, right, top - 10}, tr(Msg::MarkPage), true);
     int total = count();
+    listRows = std::max(1, int((h - top - 64) / 54));
+    first = std::clamp(first, 0, std::max(0, total - listRows));
+    bool scroll = screen == Chapters && total > listRows;
+    float contentRight = right - (scroll ? 18 : 0);
     if (!total) {
         float bottom = h - 62, mid = (top + bottom) * .5f;
         panel({left, top, right, bottom}, 20, c.card);
@@ -320,11 +356,9 @@ void Window::list() {
                                        : tr(Msg::MarkHint),
                   {left + 10, mid + 30, right - 10, mid + 64}, 14, c.muted, false, true);
     } else {
-        listRows = std::max(1, int((h - top - 64) / 54));
-        first = std::clamp(first, 0, std::max(0, total - listRows));
         for (int i = first; i < std::min(total, first + listRows); ++i) {
             float y = top + (i - first) * 54;
-            Box b = {left, y, right, y + 48};
+            Box b = {left, y, contentRight, y + 48};
             panel(b, 12, hover == Item + i ? c.tint : c.card);
             Str name, detail;
             if (shelf) {
@@ -340,16 +374,31 @@ void Window::list() {
                 std::replace(name.begin(), name.end(), L'\n', L' ');
                 detail = std::to_wstring(int(100. * p / book->text.size())) + L"%";
             }
-            label(name, {left + 16, y, right - 85, y + 48}, 16, c.ink);
-            label(detail, {right - 80, y, right - 8, y + 48}, 12, c.accent, true, true);
+            float inset = 0;
+            bool group = false;
+            if (screen == Chapters) {
+                inset = std::min(12.f * book->toc[i].depth,
+                                 std::max(0.f, (contentRight - left - 130) * .5f));
+                group = i + 1 < total && book->toc[i + 1].depth > book->toc[i].depth;
+            }
+            label(name, {left + 16 + inset, y, contentRight - 85, y + 48}, 16, c.ink, group);
+            label(detail, {contentRight - 80, y, contentRight - 8, y + 48}, 12, c.accent, true, true);
             target(Item + i, b);
         }
+    }
+    if (scroll) {
+        chapterTrack = {right - 12, top, right, top + listRows * 54 - 6};
+        float height = chapterTrack.bottom - chapterTrack.top;
+        float thumbHeight = std::min(height, std::max(28.f, height * listRows / total));
+        float thumbTop = top + (height - thumbHeight) * first / (total - listRows);
+        chapterThumb = {chapterTrack.left, thumbTop, chapterTrack.right, thumbTop + thumbHeight};
+        panel({chapterTrack.left + 4, top, chapterTrack.right - 4, chapterTrack.bottom}, 2, c.rule);
+        panel({chapterThumb.left + 3, thumbTop, chapterThumb.right - 3, chapterThumb.bottom}, 3,
+              scrollingChapters || hover == ChapterScroll ? c.accent : c.muted);
     }
     float y = h - 49;
     if (book)
         button(Read, {left, y, left + 96, y + 30}, tr(Msg::Resume));
-    else
-        label(tr(Msg::Offline), {left, y, right - 120, y + 30}, 12, c.muted);
     if (total > listRows) {
         button(Up, {right - 99, y, right - 54, y + 30}, L"↑");
         button(Down, {right - 46, y, right, y + 30}, L"↓");
@@ -445,6 +494,7 @@ void Window::paint() {
         ensure();
         margin = w < 490 ? 17.f : 32.f;
         hits.clear();
+        chapterTrack = chapterThumb = {};
         rt->BeginDraw();
         rt->Clear(ColorF(canvasColor()));
         if (!(focus && screen == Reading))
